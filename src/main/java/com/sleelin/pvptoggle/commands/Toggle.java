@@ -72,7 +72,7 @@ public class Toggle extends PvPCommand {
 	/**
 	 * Toggle the PvP status of a player
 	 * @param sender - command sender
-	 * @param targetplayer - name of player to toggle
+	 * @param player - name of player to toggle
 	 * @param newval - new PvP status of player
 	 * @param worldname - world to toggle in
 	 */
@@ -89,12 +89,10 @@ public class Toggle extends PvPCommand {
 			PvPLocalisation.display(sender, "", "", "", PvPLocalisation.Strings.NO_PERMISSION);
 			return;	// no permission, return out
 		}
-		
-		
+
 		if (sender.getName().equalsIgnoreCase(player.getName())){
 			// if sender is the target
-			if (!WorldGuardRegionCheck(player, "this")) return;	// no permission to toggle in this region
-			
+
 			if (newval){
 				// if enabling
 				plugin.setPlayerStatus(player, player.getWorld().getName(), true);
@@ -113,8 +111,7 @@ public class Toggle extends PvPCommand {
 			}
 		} else {
 			// if the target is another player
-			if (!WorldGuardRegionCheck(player, player.getName()+"'s current ")) return;	// no permission to toggle in this region
-			
+
 			// set message details
 			String message = null;
 			if (newval){
@@ -139,18 +136,6 @@ public class Toggle extends PvPCommand {
 			}
 			plugin.setLastAction(player, "toggle");
 		}
-	}
-	
-	/**
-	 * Checks if a player is currently in a WorldGuard region with the PVP flag set
-	 * @param player - who to check for
-	 * @return false if in region with flag set, otherwise true
-	 */
-	private boolean WorldGuardRegionCheck(Player player, String target) {
-		if ((Boolean) plugin.getGlobalSetting("worldguard")){
-			return plugin.regionListener.WorldGuardRegionCheck(player, target);
-		}
-		return true;
 	}
 	
 }

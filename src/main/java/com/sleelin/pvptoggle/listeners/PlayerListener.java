@@ -18,7 +18,7 @@ public class PlayerListener implements Listener {
 	
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerJoin(PlayerJoinEvent event){
-		Player player = (Player) event.getPlayer();
+		Player player = event.getPlayer();
 		for (World world : plugin.getServer().getWorlds()){
 			plugin.checkPlayerStatus(player, world.getName());
 		}

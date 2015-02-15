@@ -1,12 +1,12 @@
 package com.sleelin.pvptoggle;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class PvPCommand {
 
@@ -51,10 +51,9 @@ public abstract class PvPCommand {
 	protected Player getPlayer(CommandSender sender, String player, boolean notify) {
 		
 		List<Player> found = new ArrayList<Player>();	// list of found players
-		Player[] players = plugin.getServer().getOnlinePlayers();	// list of online players
-		
+
 		// look through players to see if any of them match
-		for (Player search : players){
+		for (Player search : plugin.getServer().getOnlinePlayers()){
 			if ((search.getDisplayName().toLowerCase().contains(player.toLowerCase())||(search.getName().toLowerCase().contains(player.toLowerCase())))){
 				found.add(search);
 			}

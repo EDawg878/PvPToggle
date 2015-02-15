@@ -40,8 +40,6 @@ public class CommandHandler implements CommandExecutor {
 			new World(plugin, sender, command, label, args).exec();
 		} else if ((args[0].equalsIgnoreCase("global"))||(args[0].equalsIgnoreCase("g"))){
 			new Global(plugin, sender, command, label, args).exec();
-		} else if (args[0].equalsIgnoreCase("region")){
-			new Region(plugin, sender, command, label, args).exec();
 		} else if (args[0].equalsIgnoreCase("help")){
 			new Help(plugin, sender, command, label, args).exec();
 		} else {

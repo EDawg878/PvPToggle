@@ -127,11 +127,9 @@ public class World extends PvPCommand {
 			PvPLocalisation.display(sender, "", "", "", PvPLocalisation.Strings.NO_PERMISSION);
 			return;	// no permission, return out
 		}
-		
-		Player players[] = plugin.getServer().getOnlinePlayers();	// get list of online players
-		
+
 		// if toggle all players in specific world
-		for (Player p : players){
+		for (Player p : plugin.getServer().getOnlinePlayers()){
 			plugin.setPlayerStatus(p, worldname, newval);
 			plugin.setLastAction(p, "toggle");
 			if (newval) PvPLocalisation.display(p, "", worldname, PvPLocalisation.Strings.PVP_ENABLED.toString(), PvPLocalisation.Strings.PVP_RESET_WORLD);

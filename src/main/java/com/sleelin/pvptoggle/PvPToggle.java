@@ -1,33 +1,17 @@
 package com.sleelin.pvptoggle;
 
-import java.net.URL;
-
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.logging.Logger;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import com.sleelin.pvptoggle.event.PvPToggleEvent;
+import com.sleelin.pvptoggle.handlers.CommandHandler;
+import com.sleelin.pvptoggle.listeners.EntityListener;
+import com.sleelin.pvptoggle.listeners.PlayerListener;
+import com.sleelin.pvptoggle.listeners.WorldListener;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
-
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sleelin.pvptoggle.handlers.CommandHandler;
-import com.sleelin.pvptoggle.handlers.RegionHandler;
-import com.sleelin.pvptoggle.listeners.EntityListener;
-import com.sleelin.pvptoggle.listeners.PlayerListener;
-import com.sleelin.pvptoggle.listeners.RegionListener;
-import com.sleelin.pvptoggle.listeners.WorldListener;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.logging.Logger;
 
 /**
  * PvPToggle
@@ -40,21 +24,12 @@ public class PvPToggle extends JavaPlugin {
 	
 	// Initialise basic tools used by updater and logger 
 	public Logger log = Logger.getLogger("Minecraft");
-	private Runnable updateThread;
-	private int updateId = -1;
-	private static final String RSS_URL = "http://dev.bukkit.org/server-mods/PvPToggle/files.rss";
-	private static String version;
-	private static String name;
-	
-	// Legacy Permissions handler
-	private static PermissionHandler permissionHandler;
 		
 	// Instantiate listeners
 	private final PlayerListener playerListener = new PlayerListener(this);
 	private final EntityListener entityListener = new EntityListener(this);
 	private final WorldListener worldListener = new WorldListener(this);
-	public RegionListener regionListener;
-	
+
 	// Create settings variables HashMaps
 	private HashMap<String, Object> globalsettings = new HashMap<String, Object>();
 	protected HashMap<String, PvPWorld> worlds = new HashMap<String, PvPWorld>();
@@ -91,31 +66,17 @@ public class PvPToggle extends JavaPlugin {
 		this.getServer().getPluginManager().registerEvents(this.entityListener, this);
 		this.getServer().getPluginManager().registerEvents(this.worldListener, this);
 		
-		
-		// Prepare and start update checker
-		PvPToggle.version = this.getDescription().getVersion();
-		PvPToggle.name = this.getDescription().getName();
-		this.startUpdateThread();
-		
 		// Register command handlers
 		if ((((String)this.globalsettings.get("command")).equalsIgnoreCase("tpvp"))||((String)this.globalsettings.get("command")).equalsIgnoreCase("pvpt")){
 			getCommand((String) this.globalsettings.get("command")).setExecutor(new CommandHandler(this));
 		} else {
 			getCommand("pvp").setExecutor(new CommandHandler(this));
 		}
-		
-		// Register worldguard listener
-		if ((Boolean) this.globalsettings.get("worldguard")){
-			RegionHandler.loadProcedure(this);
-			regionListener = new RegionListener(this);
-			this.getServer().getPluginManager().registerEvents(this.regionListener, this);
-		}
-		
+
 		System.out.println("["+ this.getDescription().getName() + "] v"+this.getDescription().getVersion()+" enabled!");
 	}
 	
 	public void onDisable(){
-		stopUpdateThread();
 		worlds.clear();
 		globalsettings.clear();
 		lastaction.clear();
@@ -167,32 +128,7 @@ public class PvPToggle extends JavaPlugin {
 		}
 
 		// Set up permissions hooks
-		if (this.getServer().getPluginManager().getPlugin("Permissions") != null){
-			if (!this.getServer().getPluginManager().getPlugin("Permissions").getDescription().getVersion().equalsIgnoreCase("2.7.7")){
-				PvPToggle.permissionHandler = ((Permissions) this.getServer().getPluginManager().getPlugin("Permissions")).getHandler();
-				log.info("[" + this.getDescription().getName() + "] Legacy Permissions "+this.getServer().getPluginManager().getPlugin("Permissions").getDescription().getVersion()+" detected");
-			} else {
-				log.info("[" + this.getDescription().getName() + "] Permissions bridge detected, using SuperPerms instead!");
-			}
-		} else {
-			log.info("[" + this.getDescription().getName() + "] Using SuperPerms for permissions checking");
-		}
-		
-		// Set up citizens hooks
-		if (this.getServer().getPluginManager().getPlugin("Citizens") != null){
-			globalsettings.put("citizens", true);
-			log.info("[" + this.getDescription().getName() + "] Citizens Plugin detected");
-		}
-		
-		// Set up WorldGuard hooks
-		if ((this.getServer().getPluginManager().getPlugin("WorldGuard") != null)&&(this.getServer().getPluginManager().getPlugin("WorldGuard") instanceof WorldGuardPlugin)){
-			log.info("[" + this.getDescription().getName() + "] WorldGuard Plugin detected...");
-			if ((Boolean) globalsettings.get("worldguard")){
-				log.info("[" + this.getDescription().getName() + "] WorldGuard integration enabled!");
-			} else {
-				log.info("[" + this.getDescription().getName() + "] WorldGuard integration disabled via options!");
-			}
-		}
+		log.info("[" + this.getDescription().getName() + "] Using SuperPerms for permissions checking");
 	}
 	
 	/**
@@ -293,7 +229,11 @@ public class PvPToggle extends JavaPlugin {
 	 */
 	public void setPlayerStatus(Player player, String world, boolean status){
 		if ((checkWorldName(world)!=null)&&(player != null)){
-			worlds.get(checkWorldName(world)).players.put(player, status);
+			PvPToggleEvent event = new PvPToggleEvent(player, world, status);
+			getServer().getPluginManager().callEvent(event);
+			if (!event.isCancelled()) {
+				worlds.get(checkWorldName(world)).players.put(player, status);
+			}
 		}
 	}
 	
@@ -393,93 +333,35 @@ public class PvPToggle extends JavaPlugin {
 	 * @param opdefault - what to do if the player is an OP
 	 * @return whether or not a user has the specified permission
 	 */
-	public boolean permissionsCheck(CommandSender sender, String permissions, boolean opdefault){
-		
+	public boolean permissionsCheck(CommandSender sender, String permissions, boolean opdefault) {
+
 		boolean haspermissions = opdefault;
 		Player player;
-		
+
 		// Check for console (always has permission)
-		if (sender instanceof Player){
+		if (sender instanceof Player) {
 			player = (Player) sender;
 		} else {
 			return true;
 		}
-		
+
 		// Do permissions checking
-		if ((Boolean) globalsettings.get("debug")) log.info(player.getName().toString()+"/"+permissions+"/Start: "+haspermissions);
-		
-		// Via legacy Permissions plugin
-		if (PvPToggle.permissionHandler != null){
-			haspermissions = PvPToggle.permissionHandler.has(player, permissions);
-			if ((Boolean) globalsettings.get("debug")) log.info(player.getName().toString()+"/"+permissions+"/LegPerms: "+haspermissions);
-			if (PvPToggle.permissionHandler.has(player, "*")){
-				haspermissions = opdefault;
-			}
+		if ((Boolean) globalsettings.get("debug"))
+			log.info(player.getName().toString() + "/" + permissions + "/Start: " + haspermissions);
+
 		// Via SuperPerms
-		} else {
-			haspermissions = player.hasPermission(permissions);
-			if ((Boolean) globalsettings.get("debug")) log.info(player.getName().toString()+"/"+permissions+"/Before*: "+haspermissions);
-			if (player.hasPermission("*")){
-				haspermissions = opdefault;
-			}
-			if ((Boolean) globalsettings.get("debug")) log.info(player.getName().toString()+"/"+permissions+"/After*: "+haspermissions);
+		haspermissions = player.hasPermission(permissions);
+		if ((Boolean) globalsettings.get("debug"))
+			log.info(player.getName().toString() + "/" + permissions + "/Before*: " + haspermissions);
+		if (player.hasPermission("*")) {
+			haspermissions = opdefault;
 		}
-		
-		if ((Boolean) globalsettings.get("debug")) log.info(player.getName().toString()+"/"+permissions+"/Final: "+haspermissions);
+		if ((Boolean) globalsettings.get("debug"))
+			log.info(player.getName().toString() + "/" + permissions + "/After*: " + haspermissions);
+
+		if ((Boolean) globalsettings.get("debug"))
+			log.info(player.getName().toString() + "/" + permissions + "/Final: " + haspermissions);
 		return haspermissions;
-	}
-
-	
-	// Thanks to Defxor & Courier for code on how to create an update checking thread
-	// http://dev.bukkit.org/profiles/defxor
-	private void startUpdateThread() {
-
-		if((Integer) globalsettings.get("updateinterval") == 0) { // == disabled
-			return;
-		}
-		if(updateThread == null) {
-			updateThread = new Runnable() {
-				public void run() {
-					String checkVersion = updateCheck(version);
-					if(!checkVersion.equalsIgnoreCase("[v"+ version + "]")) {
-						log.info("["+name+"] Found new version: " + checkVersion + " (you have [v" + version + "])");
-						log.info("["+name+"] Visit http://dev.bukkit.org/server-mods/" + name + "/ to download!");
-					}
-				}
-			};
-		}
-		// 100 = 5 seconds from start, then a period according to config (default every 24h)
-		updateId = getServer().getScheduler().scheduleAsyncRepeatingTask(this, updateThread, 100, (Integer) globalsettings.get("updateinterval")*20);
-	}
-
-	private void stopUpdateThread() {
-		if(updateId != -1) {
-			getServer().getScheduler().cancelTask(updateId);
-			updateId = -1;
-		}
-	}
-	
-	// Thanks to Sleaker & Vault for the code on how to use BukkitDev RSS feed for this
-	// http://dev.bukkit.org/profiles/Sleaker/
-	public String updateCheck(String currentVersion) {
-		try {
-			URL url = new URL(RSS_URL);
-			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(url.openConnection().getInputStream());
-			doc.getDocumentElement().normalize();
-			NodeList nodes = doc.getElementsByTagName("item");
-			Node firstNode = nodes.item(0);
-			if (firstNode.getNodeType() == 1) {
-				Element firstElement = (Element)firstNode;
-				NodeList firstElementTagName = firstElement.getElementsByTagName("title");
-				Element firstNameElement = (Element) firstElementTagName.item(0);
-				NodeList firstNodes = firstNameElement.getChildNodes();
-				return firstNodes.item(0).getNodeValue();
-			}
-		}
-		catch (Exception e) {
-			return currentVersion;
-		}
-		return currentVersion;
 	}
 
 }

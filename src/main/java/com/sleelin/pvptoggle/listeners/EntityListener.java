@@ -1,5 +1,8 @@
 package com.sleelin.pvptoggle.listeners;
 
+import com.sleelin.pvptoggle.PvPLocalisation;
+import com.sleelin.pvptoggle.PvPLocalisation.Strings;
+import com.sleelin.pvptoggle.PvPToggle;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -11,12 +14,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
-
-import com.sleelin.pvptoggle.PvPLocalisation;
-import com.sleelin.pvptoggle.PvPLocalisation.Strings;
-import com.sleelin.pvptoggle.PvPToggle;
-
-import net.citizensnpcs.api.CitizensAPI;
 
 public class EntityListener implements Listener {
 	
@@ -45,12 +42,6 @@ public class EntityListener implements Listener {
 				} else if (edbye.getDamager() instanceof Player){
 					damager = (Player) edbye.getDamager();
 					proceed = true;
-				}
-				
-				if ((Boolean) plugin.getGlobalSetting("citizens")){
-					if (CitizensAPI.getNPCRegistry().isNPC(player)){
-						proceed = false;
-					}
 				}
 				
 				if (proceed){

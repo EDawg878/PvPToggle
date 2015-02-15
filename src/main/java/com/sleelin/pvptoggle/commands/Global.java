@@ -110,11 +110,9 @@ public class Global extends PvPCommand {
 			PvPLocalisation.display(sender, "", "", "", PvPLocalisation.Strings.NO_PERMISSION);
 			return;	// no permission, return out
 		}
-		
-		Player players[] = plugin.getServer().getOnlinePlayers();	// get list of online players
 
 		// toggle all players in all worlds
-		for (Player p : players){
+		for (Player p : plugin.getServer().getOnlinePlayers()){
 			for (World world : plugin.getServer().getWorlds()){
 				plugin.setPlayerStatus(p, world.getName(), plugin.getWorldDefault(world.getName()));	
 			}
