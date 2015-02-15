@@ -6,7 +6,7 @@
 
     <groupId>com.edawg878</groupId>
     <artifactId>PvPToggle</artifactId>
-    <version>v3.0.1</version>
+    <version>3.0.1</version>
 
     <build>
         <plugins>
@@ -36,5 +36,4 @@
         </dependency>
     </dependencies>
 
-    
 </project>
